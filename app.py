@@ -1,10 +1,19 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import recommendation_model as rm
 import os
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='frontend', static_url_path='')
 CORS(app)
+
+# Serve Frontend
+@app.route('/')
+def serve_index():
+    return send_from_directory(app.static_folder, 'index.html')
+
+@app.route('/<path:path>')
+def serve_static(path):
+    return send_from_directory(app.static_folder, path)
 
 # Initialize the recommendation system
 print("Initializing Recommendation System...")
@@ -74,5 +83,6 @@ def health():
     return jsonify({"status": "online", "message": "Backend is running!"})
 
 if __name__ == '__main__':
-    # Use port 8081 as before
-    app.run(host='0.0.0.0', port=8081, debug=True)
+    # Use dynamic port for deployment or 8081 for local development
+    port = int(os.environ.get('PORT', 8081))
+    app.run(host='0.0.0.0', port=port, debug=True)

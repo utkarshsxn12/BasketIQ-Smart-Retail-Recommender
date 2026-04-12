@@ -1,4 +1,5 @@
-const API_BASE = 'http://localhost:8081';
+// API Base URL - use empty string for relative paths when deployed on same server
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:8081' : '';
 
 // Elements
 const searchInput = document.getElementById('search-input');

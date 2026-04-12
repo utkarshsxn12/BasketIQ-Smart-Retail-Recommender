@@ -4,3 +4,4 @@ mlxtend
 scikit-learn
 numpy
 flask-cors
+gunicorn
