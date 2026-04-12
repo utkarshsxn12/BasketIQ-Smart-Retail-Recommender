@@ -1,4 +1,4 @@
-# 🛒 Smart Retail Recommender (AI-Based)
+# 🛒 Product Recommendation Engine!
 
 An intelligent product recommendation system that analyzes customer purchase patterns using **Market Basket Analysis** to suggest relevant products in real-time.
 
