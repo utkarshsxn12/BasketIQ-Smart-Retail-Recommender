@@ -75,6 +75,7 @@ ITEM_SIM_DF = None
 ITEM_FREQS = None
 RULES_DF = None
 
+# Placeholder for instruction-based changes
 def load_data(file_path):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dataset file not found at {file_path}")
@@ -137,7 +138,7 @@ def get_best_match(item, all_items):
     matches = difflib.get_close_matches(item, list(all_items), n=1, cutoff=0.75)
     return matches[0] if matches else None
 
-def hybrid_recommend(input_str, rules, k=3):
+def recommend(input_str, rules, k=3):
     input_items = [i.strip() for i in input_str.split('+')]
     all_dataset_items = list(ITEM_FREQS.index)
     
@@ -227,8 +228,60 @@ def hybrid_recommend(input_str, rules, k=3):
     
     return recommendations[:k]
 
+def get_top_products(n=10):
+    if ITEM_FREQS is not None:
+        top = ITEM_FREQS.head(n)
+        return [{"product": name, "count": int(count)} for name, count in top.items()]
+    return []
+
+def get_model_stats():
+    if RULES_DF is None or ITEM_FREQS is None:
+        return {}
+    
+    return {
+        "total_transactions": len(ITEM_FREQS), # This is actually total unique items, but we can use it as a proxy or track actual transactions
+        "total_rules": len(RULES_DF),
+        "avg_confidence": float(round(RULES_DF['confidence'].mean() * 100, 1)),
+        "avg_lift": float(round(RULES_DF['lift'].mean(), 2))
+    }
+
+def get_top_combinations(n=5):
+    if RULES_DF is None:
+        return []
+    
+    top_rules = RULES_DF.sort_values('lift', ascending=False).head(n)
+    combinations = []
+    for _, row in top_rules.iterrows():
+        combinations.append({
+            "antecedents": list(row['antecedents']),
+            "consequents": list(row['consequents']),
+            "confidence": float(round(row['confidence'] * 100, 1)),
+            "lift": float(round(row['lift'], 2))
+        })
+    return combinations
+
+def get_smart_insights():
+    if RULES_DF is None or ITEM_FREQS is None:
+        return []
+    
+    insights = []
+    
+    # Highest confidence rule
+    best_conf = RULES_DF.sort_values('confidence', ascending=False).iloc[0]
+    insights.append(f"Customers buying {', '.join(list(best_conf['antecedents']))} are {int(best_conf['confidence']*100)}% likely to also buy {', '.join(list(best_conf['consequents']))}.")
+    
+    # Most frequent item
+    top_item = ITEM_FREQS.index[0]
+    insights.append(f"{top_item.capitalize()} is your most popular item, appearing in the most transactions.")
+    
+    # Rule with highest lift
+    best_lift = RULES_DF.sort_values('lift', ascending=False).iloc[0]
+    insights.append(f"There's a very strong correlation between {', '.join(list(best_lift['antecedents']))} and {', '.join(list(best_lift['consequents']))}.")
+    
+    return insights
+
 def setup_system(dataset_path='simple_groceries.csv'):
-    global RULES_DF
+    global RULES_DF, ITEM_FREQS
     raw_df = load_data(dataset_path)
     transactions = create_transactions(raw_df)
     df_encoded = encode_transactions(transactions)
@@ -238,11 +291,11 @@ def setup_system(dataset_path='simple_groceries.csv'):
 
 def main():
     rules = setup_system()
-    print("\nHYBRID INTELLIGENT SYSTEM (CLI MODE)")
+    print("\nINTELLIGENT SYSTEM (CLI MODE)")
     while True:
         user_input = input("\nEnter product(s) (e.g., milk + bread): ").strip()
         if user_input.lower() == 'exit': break
-        recs = hybrid_recommend(user_input, rules, k=5)
+        recs = recommend(user_input, rules, k=5)
         for i, res in enumerate(recs, 1):
             print(f" {i}. {res['product']} → {res['confidence_display']}% ({res['reason']})")
 

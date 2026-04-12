@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Smart Retail Recommender | AI Powered</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { 
@@ -31,11 +37,14 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
         .card-hover {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .card-hover:hover { 
-            transform: translateY(-4px) scale(1.01); 
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            transform: translateY(-12px) scale(1.02); 
+            box-shadow: 0 40px 60px -15px rgba(0, 0, 0, 0.1), 0 20px 30px -10px rgba(0, 0, 0, 0.05);
+        }
+        .dark .card-hover:hover {
+            box-shadow: 0 40px 60px -15px rgba(0, 0, 0, 0.4), 0 20px 30px -10px rgba(0, 0, 0, 0.2);
         }
         .spinner { 
             width: 40px; 
@@ -62,27 +71,41 @@
         }
     </style>
 </head>
-<body class="min-h-screen text-slate-900">
+<body class="min-h-screen text-slate-900 transition-colors duration-500 dark:bg-slate-950 dark:text-slate-100">
     <!-- Header -->
-    <header class="bg-white/70 sticky top-0 z-50 backdrop-blur-xl border-b border-slate-200/60">
+    <header class="bg-white/70 sticky top-0 z-50 backdrop-blur-xl border-b border-slate-200/60 dark:bg-slate-900/70 dark:border-slate-800/60">
         <div class="max-w-7xl mx-auto px-6 py-5 flex justify-between items-center">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200">
+                <div class="w-10 h-10 gradient-bg rounded-xl flex items-center justify-center shadow-lg shadow-indigo-200 dark:shadow-indigo-900/20">
                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900">
+                    <h1 class="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-white">
                         Smart<span class="gradient-text">Retail</span>
                     </h1>
                     <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.2em] -mt-1">AI Recommendation Engine</p>
                 </div>
             </div>
-            <div id="status-container" class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-full border border-slate-200/50 shadow-sm">
-                <div class="relative flex h-2 w-2">
-                    <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
-                    <span id="status-dot" class="relative inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
+            
+            <div class="flex items-center space-x-6">
+                <!-- Dark Mode Toggle -->
+                <div class="flex items-center gap-3 bg-slate-100/50 p-1.5 rounded-full border border-slate-200/50 dark:bg-slate-800/50 dark:border-slate-700/50">
+                    <button id="dark-mode-toggle" class="relative inline-flex h-8 w-14 items-center rounded-full bg-slate-200 transition-all duration-300 focus:outline-none dark:bg-indigo-600 shadow-inner">
+                        <span class="sr-only">Toggle dark mode</span>
+                        <div id="toggle-dot" class="absolute left-1 flex h-6 w-6 transform items-center justify-center rounded-full bg-white shadow-md transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] dark:translate-x-6">
+                            <svg id="sun-icon" class="h-3.5 w-3.5 text-amber-500 dark:hidden" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z"></path></svg>
+                            <svg id="moon-icon" class="h-3.5 w-3.5 text-indigo-600 hidden dark:block" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                        </div>
+                    </button>
                 </div>
-                <span id="status-text" class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">System Offline</span>
+
+                <div id="status-container" class="flex items-center space-x-2 bg-slate-50 px-4 py-2 rounded-full border border-slate-200/50 shadow-sm dark:bg-slate-800 dark:border-slate-700">
+                    <div class="relative flex h-2 w-2">
+                        <span id="status-ping" class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+                        <span id="status-dot" class="relative inline-flex rounded-full h-2 w-2 bg-slate-400"></span>
+                    </div>
+                    <span id="status-text" class="text-[11px] font-bold text-slate-500 uppercase tracking-wider dark:text-slate-400">System Offline</span>
+                </div>
             </div>
         </div>
     </header>
@@ -93,11 +116,11 @@
             <!-- Left: Search Section -->
             <div class="lg:col-span-7 space-y-12">
                 <div class="space-y-6">
-                    <h2 class="text-5xl font-black text-slate-900 leading-tight">
+                    <h2 class="text-5xl font-black text-slate-900 leading-tight dark:text-white">
                         Predict what they'll <br><span class="gradient-text">buy next.</span>
                     </h2>
-                    <p class="text-lg text-slate-500 max-w-lg leading-relaxed">
-                        Our hybrid intelligence model combines market patterns with behavioral similarity to deliver professional-grade product suggestions.
+                    <p class="text-lg text-slate-500 max-w-lg leading-relaxed dark:text-slate-400">
+                        The intelligence model combines market patterns with behavioral similarity to deliver professional-grade product suggestions.
                     </p>
                     
                     <div class="relative group search-glow rounded-3xl transition-all duration-300">
@@ -108,16 +131,16 @@
                             type="text" 
                             id="search-input"
                             placeholder="Search products (e.g. chips, milk, paneer)" 
-                            class="w-full pl-16 pr-6 py-6 rounded-3xl bg-white border border-slate-200 focus:border-indigo-400 outline-none text-lg font-medium shadow-sm transition-all placeholder:text-slate-300"
+                            class="w-full pl-16 pr-6 py-6 rounded-3xl bg-white border border-slate-200 focus:border-indigo-400 outline-none text-lg font-medium shadow-sm transition-all placeholder:text-slate-300 dark:bg-slate-900 dark:border-slate-800 dark:text-white dark:placeholder:text-slate-600"
                         >
                     </div>
 
                     <div class="flex flex-wrap gap-3 items-center">
                         <span class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mr-2">Suggestions</span>
-                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95">milk + bread</button>
-                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95">colgate</button>
-                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95">tea</button>
-                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95">shampoo</button>
+                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800">milk + bread</button>
+                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800">colgate</button>
+                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800">tea</button>
+                        <button class="suggestion-btn px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-600 rounded-2xl text-xs font-bold transition-all border border-slate-200 shadow-sm active:scale-95 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400 dark:hover:bg-slate-800">shampoo</button>
                     </div>
                 </div>
 
@@ -130,19 +153,35 @@
                         </div>
                         <p id="insight-rules" class="text-3xl font-black">0</p>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-32 premium-shadow">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-32 premium-shadow dark:bg-slate-900 dark:border-slate-800">
                         <div class="flex justify-between items-start">
                             <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Confidence</p>
                             <span class="text-xl">📈</span>
                         </div>
-                        <p id="insight-conf" class="text-3xl font-black text-slate-800">0%</p>
+                        <p id="insight-conf" class="text-3xl font-black text-slate-800 dark:text-white">0%</p>
                     </div>
-                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-32 premium-shadow">
+                    <div class="bg-white p-6 rounded-3xl border border-slate-100 shadow-sm flex flex-col justify-between h-32 premium-shadow dark:bg-slate-900 dark:border-slate-800">
                         <div class="flex justify-between items-start">
                             <p class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Avg Lift</p>
                             <span class="text-xl">🔥</span>
                         </div>
-                        <p id="insight-lift" class="text-3xl font-black text-slate-800">0</p>
+                        <p id="insight-lift" class="text-3xl font-black text-slate-800 dark:text-white">0</p>
+                    </div>
+                </div>
+
+                <!-- Sales Graph Section -->
+                <div class="bg-white p-8 rounded-[2.5rem] premium-shadow border border-slate-100/50 space-y-6 dark:bg-slate-900 dark:border-slate-800">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-xl font-black text-slate-800 tracking-tight dark:text-white">Most Popular Products</h3>
+                            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest">Global Purchase Frequency</p>
+                        </div>
+                        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center dark:bg-slate-800">
+                            <span class="text-lg">📊</span>
+                        </div>
+                    </div>
+                    <div class="h-[300px] w-full">
+                        <canvas id="salesChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -151,7 +190,7 @@
             <div class="lg:col-span-5">
                 <div class="sticky top-32 space-y-8">
                     <div class="flex justify-between items-center">
-                        <h3 class="text-2xl font-black text-slate-800 tracking-tight">Top Suggestions</h3>
+                        <h3 class="text-2xl font-black text-slate-800 tracking-tight dark:text-white">Top Suggestions</h3>
                         <div id="loader" class="hidden">
                             <div class="spinner !w-7 !h-7"></div>
                         </div>
@@ -159,19 +198,19 @@
 
                     <div id="rec-container" class="space-y-5">
                         <!-- Initial Empty State -->
-                        <div id="empty-state" class="bg-white p-16 rounded-[2.5rem] border-2 border-dashed border-slate-200/60 text-center space-y-6">
-                            <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto ring-8 ring-slate-50/50">
-                                <svg class="w-12 h-12 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
+                        <div id="empty-state" class="bg-white p-16 rounded-[2.5rem] border-2 border-dashed border-slate-200/60 text-center space-y-6 dark:bg-slate-900 dark:border-slate-800">
+                            <div class="w-24 h-24 bg-slate-50 rounded-full flex items-center justify-center mx-auto ring-8 ring-slate-50/50 dark:bg-slate-800 dark:ring-slate-800/50">
+                                <svg class="w-12 h-12 text-slate-200 dark:text-slate-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                             </div>
                             <div class="space-y-2">
-                                <p class="text-slate-900 font-bold text-lg">Waiting for input</p>
+                                <p class="text-slate-900 font-bold text-lg dark:text-white">Waiting for input</p>
                                 <p class="text-slate-400 text-sm max-w-[200px] mx-auto">Recommendations will appear here once you start searching.</p>
                             </div>
                         </div>
                     </div>
 
-                    <div id="no-results" class="hidden bg-rose-50 p-10 rounded-[2.5rem] border border-rose-100 text-center space-y-4">
-                        <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-500">
+                    <div id="no-results" class="hidden bg-rose-50 p-10 rounded-[2.5rem] border border-rose-100 text-center space-y-4 dark:bg-rose-950/20 dark:border-rose-900/30">
+                        <div class="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-500 dark:bg-rose-900/50">
                             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
                         </div>
                         <div>
@@ -182,14 +221,125 @@
                 </div>
             </div>
         </div>
+
+        <!-- Model Intelligence Dashboard (New Section) -->
+        <section id="model-dashboard" class="mt-32 space-y-16">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <!-- Left: Model Statistics & Insights -->
+                <div class="space-y-10">
+                    <div class="space-y-4">
+                        <h3 class="text-3xl font-black text-slate-900 dark:text-white">Model Intelligence</h3>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium">Real-time metrics and behavioral patterns from the AI engine.</p>
+                    </div>
+
+                    <!-- Statistics Grid -->
+                    <div class="grid grid-cols-2 gap-6" id="stats-grid">
+                        <div class="bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover">
+                            <div class="w-12 h-12 bg-indigo-50 dark:bg-indigo-950/30 rounded-2xl flex items-center justify-center text-xl mb-6">📝</div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Total Items</p>
+                            <h4 id="stat-transactions" class="text-3xl font-black text-slate-800 dark:text-white">200+</h4>
+                        </div>
+                        <div class="bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover">
+                            <div class="w-12 h-12 bg-violet-50 dark:bg-violet-950/30 rounded-2xl flex items-center justify-center text-xl mb-6">🔗</div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Active Rules</p>
+                            <h4 id="stat-rules" class="text-3xl font-black text-slate-800 dark:text-white">0</h4>
+                        </div>
+                        <div class="bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover">
+                            <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl flex items-center justify-center text-xl mb-6">🎯</div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Avg Confidence</p>
+                            <h4 id="stat-confidence" class="text-3xl font-black text-slate-800 dark:text-white">0%</h4>
+                        </div>
+                        <div class="bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover">
+                            <div class="w-12 h-12 bg-amber-50 dark:bg-amber-950/30 rounded-2xl flex items-center justify-center text-xl mb-6">🚀</div>
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-1">Average Lift</p>
+                            <h4 id="stat-lift" class="text-3xl font-black text-slate-800 dark:text-white">0</h4>
+                        </div>
+                    </div>
+
+                    <!-- Smart Insights -->
+                    <div class="bg-indigo-600 p-10 rounded-[3rem] text-white shadow-2xl shadow-indigo-200 dark:shadow-none space-y-6 relative overflow-hidden group">
+                        <div class="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-110 transition-transform duration-700">
+                            <svg class="w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"></path></svg>
+                        </div>
+                        <h4 class="text-xl font-black uppercase tracking-widest opacity-80">Smart Insights</h4>
+                        <div id="smart-insights-container" class="space-y-4 relative z-10">
+                            <!-- Dynamic Insights -->
+                            <p class="text-lg font-medium leading-relaxed">Analyzing market patterns to provide strategic recommendations...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Top Combinations -->
+                <div class="space-y-10">
+                    <div class="space-y-4">
+                        <h3 class="text-3xl font-black text-slate-900 dark:text-white">Frequent Pairs</h3>
+                        <p class="text-slate-500 dark:text-slate-400 font-medium">Discover which products are most commonly bought together.</p>
+                    </div>
+
+                    <div id="combinations-list" class="space-y-4">
+                        <!-- Dynamic Combinations -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How It Works Section -->
+        <section class="mt-40 space-y-16">
+            <div class="text-center space-y-4">
+                <h2 class="text-4xl font-black text-slate-900 dark:text-white">How It Works</h2>
+                <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-medium text-lg">The recommendation engine follows a structured machine learning pipeline to deliver professional-grade suggestions.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="bg-white dark:bg-black p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover space-y-6">
+                    <div class="w-16 h-16 bg-blue-50 dark:bg-blue-950/30 rounded-2xl flex items-center justify-center text-3xl">📥</div>
+                    <div class="space-y-3">
+                        <h4 class="text-xl font-black text-slate-800 dark:text-white">1. Data Preprocessing</h4>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">The system collects raw grocery transaction logs and structures them into a usable format for the recommendation engine.</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-black p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover space-y-6">
+                    <div class="w-16 h-16 bg-purple-50 dark:bg-purple-950/30 rounded-2xl flex items-center justify-center text-3xl">🧹</div>
+                    <div class="space-y-3">
+                        <h4 class="text-xl font-black text-slate-800 dark:text-white">2. Data Cleaning</h4>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">Duplicates are removed, product synonyms are mapped, and noise is filtered out to ensure high data quality and recommendation accuracy.</p>
+                    </div>
+                </div>
+                <div class="bg-white dark:bg-black p-10 rounded-[3rem] border border-slate-100 dark:border-slate-800 premium-shadow card-hover space-y-6">
+                    <div class="w-16 h-16 bg-emerald-50 dark:bg-emerald-950/30 rounded-2xl flex items-center justify-center text-3xl">📊</div>
+                    <div class="space-y-3">
+                        <h4 class="text-xl font-black text-slate-800 dark:text-white">3. Model Evaluation</h4>
+                        <p class="text-slate-500 dark:text-slate-400 text-sm leading-relaxed">The engine calculates confidence and lift metrics to validate patterns and deliver the most relevant product suggestions.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-3xl mx-auto pt-10">
+                 <div class="animate-on-scroll opacity-0 bg-white p-12 rounded-[3rem] premium-shadow border border-slate-100/50 dark:bg-slate-900 dark:border-slate-800 flex flex-col items-center text-center space-y-8 card-hover group">
+                     <div class="w-20 h-20 bg-indigo-50 rounded-2xl flex items-center justify-center text-4xl dark:bg-indigo-900/30 group-hover:scale-110 transition-transform duration-500">🤖</div>
+                     <div class="space-y-4">
+                         <h4 class="text-3xl font-black text-slate-800 dark:text-white">Model Architecture</h4>
+                         <p class="text-xl text-slate-500 dark:text-slate-400 leading-relaxed font-medium italic">
+                             Powered by high-performance Python libraries for market basket analysis.
+                         </p>
+                     </div>
+                     <div class="flex flex-wrap justify-center gap-4">
+                         <span class="px-6 py-2 bg-indigo-50 text-indigo-600 rounded-full text-sm font-bold dark:bg-indigo-900/30 dark:text-indigo-400">Python</span>
+                         <span class="px-6 py-2 bg-violet-50 text-violet-600 rounded-full text-sm font-bold dark:bg-violet-900/30 dark:text-violet-400">MLxtend</span>
+                         <span class="px-6 py-2 bg-emerald-50 text-emerald-600 rounded-full text-sm font-bold dark:bg-emerald-900/30 dark:text-emerald-400">Pandas</span>
+                         <span class="px-6 py-2 bg-amber-50 text-amber-600 rounded-full text-sm font-bold dark:bg-amber-900/30 dark:text-amber-400">Scikit-Learn</span>
+                     </div>
+                 </div>
+             </div>
+        </section>
     </main>
 
-    <footer class="mt-24 py-16 border-t border-slate-200/60 bg-white/50 backdrop-blur-sm">
+    <footer class="mt-24 py-16 border-t border-slate-200/60 bg-white/50 backdrop-blur-sm dark:bg-slate-900/50 dark:border-slate-800/60">
         <div class="max-w-7xl mx-auto px-6 text-center space-y-4">
             <div class="flex justify-center items-center space-x-6">
-                <span class="h-px w-12 bg-slate-200"></span>
-                <p class="text-slate-500 text-xs font-bold uppercase tracking-[0.3em]">AI Dashboard v2.0</p>
-                <span class="h-px w-12 bg-slate-200"></span>
+                <span class="h-px w-12 bg-slate-200 dark:bg-slate-800"></span>
+                <p class="text-slate-500 text-xs font-bold uppercase tracking-[0.3em] dark:text-slate-400">AI Dashboard v2.0</p>
+                <span class="h-px w-12 bg-slate-200 dark:bg-slate-800"></span>
             </div>
             <p class="text-slate-400 text-[10px] font-medium">&copy; 2026 Smart Retail Recommender. All rights reserved.</p>
         </div>
