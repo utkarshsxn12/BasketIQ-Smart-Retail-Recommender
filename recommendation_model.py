@@ -70,11 +70,11 @@ RELATED_CATEGORIES = {
     "household": ["personal_care"]
 }
 
-# Global similarity matrix and items
+# State management
 ITEM_SIM_DF = None
 ITEM_FREQS = None
+RULES_DF = None
 
-# 🔹 1. load_data(file_path)
 def load_data(file_path):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"Dataset file not found at {file_path}")
@@ -84,10 +84,8 @@ def load_data(file_path):
             items = [item.strip() for item in line.split(',') if item.strip()]
             if items: data.append(items)
     df = pd.DataFrame(data)
-    print(f"Dataset loaded successfully from {file_path}")
     return df
 
-# 🔹 3. create_transactions(df)
 def create_transactions(df):
     transactions = []
     global ITEM_FREQS
@@ -101,55 +99,37 @@ def create_transactions(df):
                     items.append(clean_item)
                     all_items.append(clean_item)
         if items: transactions.append(items)
-    
     ITEM_FREQS = pd.Series(all_items).value_counts()
-    print(f"Created {len(transactions)} cleaned transactions.")
     return transactions
 
-# 🔹 4. encode_transactions(transactions)
 def encode_transactions(transactions):
     te = TransactionEncoder()
     te_ary = te.fit(transactions).transform(transactions)
     df_encoded = pd.DataFrame(te_ary, columns=te.columns_)
     
-    # Calculate Cosine Similarity
     global ITEM_SIM_DF
-    # Transpose so items are rows
     item_matrix = df_encoded.T.values
     sim_matrix = cosine_similarity(item_matrix)
     ITEM_SIM_DF = pd.DataFrame(sim_matrix, index=df_encoded.columns, columns=df_encoded.columns)
-    
-    print("Transactions encoded and similarity matrix calculated.")
     return df_encoded
 
-# 🔹 5. train_models(df_encoded)
 def train_models(df_encoded, min_support=0.01):
-    print(f"\nTraining FP-Growth with min_support={min_support}...")
     frequent_itemsets = fpgrowth(df_encoded, min_support=min_support, use_colnames=True)
     return frequent_itemsets
 
-# 🔹 6. generate_rules(frequent_itemsets)
 def generate_rules(frequent_itemsets, min_confidence=0.2):
-    print(f"Generating rules with min_confidence={min_confidence}...")
     rules = association_rules(frequent_itemsets, metric="confidence", min_threshold=min_confidence)
     
-    # Advanced Scoring: (confidence * lift) / log(1 + freq)
     def calculate_advanced_score(row):
-        # Get consequence item name (assuming single item consequents for simplicity in scoring)
         consequent = list(row['consequents'])[0]
         freq = ITEM_FREQS.get(consequent, 1)
         return (row['confidence'] * row['lift']) / np.log1p(freq)
 
-    # Filter: confidence > 0.3 and lift > 1.2 (Strict Filtering)
     strong_rules = rules[(rules['confidence'] >= 0.3) & (rules['lift'] >= 1.2)].copy()
-    
     if not strong_rules.empty:
         strong_rules['score'] = strong_rules.apply(calculate_advanced_score, axis=1)
-    
-    print(f"Generated {len(strong_rules)} strong rules.")
     return strong_rules
 
-# 🔹 Matching Logic
 def get_best_match(item, all_items):
     item = item.lower().strip()
     if item in PRODUCT_SYNONYMS:
@@ -157,11 +137,7 @@ def get_best_match(item, all_items):
     matches = difflib.get_close_matches(item, list(all_items), n=1, cutoff=0.75)
     return matches[0] if matches else None
 
-# 🔹 Hybrid Recommendation Engine
 def hybrid_recommend(input_str, rules, k=3):
-    """
-    Hybrid System: Multi-Input + Association Rules + Similarity Fallback + Category Filter
-    """
     input_items = [i.strip() for i in input_str.split('+')]
     all_dataset_items = list(ITEM_FREQS.index)
     
@@ -170,10 +146,8 @@ def hybrid_recommend(input_str, rules, k=3):
         match = get_best_match(item, all_dataset_items)
         if match: matched_items.append(match)
     
-    if not matched_items:
-        return []
+    if not matched_items: return []
 
-    # Get input categories
     input_cats = set()
     for item in matched_items:
         cat = PRODUCT_CATEGORIES.get(item)
@@ -187,9 +161,7 @@ def hybrid_recommend(input_str, rules, k=3):
     seen = set(matched_items)
 
     # 1. Association Rules
-    # Look for rules matching as many input items as possible
     matching_rules = rules[rules['antecedents'].apply(lambda x: any(i in x for i in matched_items))].copy()
-    
     if not matching_rules.empty:
         # Prioritize rules that match MORE input items
         matching_rules['match_count'] = matching_rules['antecedents'].apply(lambda x: sum(1 for i in matched_items if i in x))
@@ -200,80 +172,79 @@ def hybrid_recommend(input_str, rules, k=3):
                 if prod not in seen:
                     prod_cat = PRODUCT_CATEGORIES.get(prod)
                     if not allowed_cats or prod_cat in allowed_cats:
+                        # 🔹 Improved Sentence Generation Logic
+                        antecedents_list = list(row['antecedents'])
+                        if len(antecedents_list) > 1:
+                            antecedents_text = ", ".join(antecedents_list[:-1]) + " and " + antecedents_list[-1]
+                        else:
+                            antecedents_text = antecedents_list[0]
+                            
+                        confidence_pct = int(row['confidence']*100)
+                        reason = f"{confidence_pct}% of users who bought {antecedents_text} also bought {prod}"
+                        
                         recommendations.append({
                             "product": prod,
                             "score": row['score'],
-                            "reason": f"{int(row['confidence']*100)}% of users who bought {', '.join(row['antecedents'])} also bought {prod}"
+                            "reason": reason
                         })
                         seen.add(prod)
                 if len(recommendations) >= k: break
             if len(recommendations) >= k: break
 
-    # 2. Similarity Fallback (if not enough results)
+    # 2. Similarity Fallback
     if len(recommendations) < k:
         sim_results = []
+        # Create a display string for input items for the similarity reason
+        if len(matched_items) > 1:
+            input_text = ", ".join(matched_items[:-1]) + " and " + matched_items[-1]
+        else:
+            input_text = matched_items[0]
+
         for item in matched_items:
             if item in ITEM_SIM_DF:
                 sim_scores = ITEM_SIM_DF[item].sort_values(ascending=False)
                 for prod, score in sim_scores.items():
-                    if prod not in seen and score > 0.1: # Cutoff for similarity
+                    if prod not in seen and score > 0.1:
                         prod_cat = PRODUCT_CATEGORIES.get(prod)
                         if not allowed_cats or prod_cat in allowed_cats:
                             sim_results.append({
                                 "product": prod,
                                 "score": score,
-                                "reason": "Recommended because it is often similar to your choice"
+                                "reason": f"Recommended because it is often similar to your choice of {input_text}"
                             })
-        
-        # Sort similarity results and add
         sim_results = sorted(sim_results, key=lambda x: x['score'], reverse=True)
         for res in sim_results:
             if len(recommendations) >= k: break
             recommendations.append(res)
             seen.add(res['product'])
 
-    # Normalize scores
     if recommendations:
-        # Sort by score descending one last time before normalization
         recommendations = sorted(recommendations, key=lambda x: x['score'], reverse=True)
         max_score = recommendations[0]['score']
         for rec in recommendations:
             rec['confidence_display'] = round((rec['score'] / max_score) * 100)
-            # Ensure no score exceeds 100% (just in case)
             if rec['confidence_display'] > 100: rec['confidence_display'] = 100
     
     return recommendations[:k]
 
+def setup_system(dataset_path='simple_groceries.csv'):
+    global RULES_DF
+    raw_df = load_data(dataset_path)
+    transactions = create_transactions(raw_df)
+    df_encoded = encode_transactions(transactions)
+    frequent_itemsets = train_models(df_encoded, min_support=0.01)
+    RULES_DF = generate_rules(frequent_itemsets, min_confidence=0.2)
+    return RULES_DF
+
 def main():
-    dataset_path = 'simple_groceries.csv'
-    try:
-        raw_df = load_data(dataset_path)
-        transactions = create_transactions(raw_df)
-        df_encoded = encode_transactions(transactions)
-        frequent_itemsets = train_models(df_encoded, min_support=0.01)
-        rules = generate_rules(frequent_itemsets, min_confidence=0.2)
-        
-        print("\n" + "*"*30)
-        print("HYBRID INTELLIGENT SYSTEM")
-        print("*"*30)
-        print("(Type 'exit' to quit, use '+' for multiple items)")
-        
-        while True:
-            user_input = input("\nEnter product(s) (e.g., milk + bread): ").strip()
-            if user_input.lower() == 'exit': break
-            if not user_input: continue
-                
-            recs = hybrid_recommend(user_input, rules, k=3)
-            print(f"Recommendations for '{user_input}':")
-            if recs:
-                for i, res in enumerate(recs, 1):
-                    print(f" {i}. {res['product']} → {res['confidence_display']}%")
-                    print(f"    Reason: {res['reason']}")
-            else:
-                print(" No specific recommendations found.")
-                
-    except Exception as e:
-        print(f"CRITICAL ERROR: {e}")
+    rules = setup_system()
+    print("\nHYBRID INTELLIGENT SYSTEM (CLI MODE)")
+    while True:
+        user_input = input("\nEnter product(s) (e.g., milk + bread): ").strip()
+        if user_input.lower() == 'exit': break
+        recs = hybrid_recommend(user_input, rules, k=5)
+        for i, res in enumerate(recs, 1):
+            print(f" {i}. {res['product']} → {res['confidence_display']}% ({res['reason']})")
 
 if __name__ == "__main__":
     main()
