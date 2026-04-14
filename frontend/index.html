@@ -81,7 +81,7 @@
                 </div>
                 <div>
                     <h1 class="text-2xl font-black tracking-tight text-slate-900 dark:text-white leading-none">
-                        Product <span class="gradient-text">Recommendation System</span>
+                        Basket<span class="gradient-text">IQ</span>
                     </h1>
                 </div>
             </div>
@@ -277,6 +277,53 @@
 
                     <div id="combinations-list" class="space-y-4">
                         <!-- Dynamic Combinations -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Customer Segmentation Dashboard (New Section) -->
+        <section id="segmentation-dashboard" class="mt-32 space-y-16">
+            <div class="text-center space-y-4">
+                <h2 class="text-4xl font-black text-slate-900 dark:text-white">Customer Segmentation</h2>
+                <p class="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto font-medium text-lg">Analyzing behavior patterns to group customers based on their purchasing habits using K-Means Clustering.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12">
+                <!-- Cluster Distribution Chart -->
+                <div class="lg:col-span-5 bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 premium-shadow">
+                    <h4 class="text-xl font-black text-slate-800 dark:text-white mb-6">Cluster Distribution</h4>
+                    <div class="h-[300px] w-full">
+                        <canvas id="segmentChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Cluster Summary -->
+                <div class="lg:col-span-7 space-y-6" id="segment-summary-container">
+                    <!-- Dynamic Segment Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6" id="segment-cards">
+                        <!-- Cards will be injected here -->
+                    </div>
+                    
+                    <!-- Customer Samples Table -->
+                    <div class="bg-white dark:bg-black p-8 rounded-[2.5rem] border border-slate-100 dark:border-slate-800 premium-shadow overflow-hidden">
+                        <h4 class="text-xl font-black text-slate-800 dark:text-white mb-6">Recent Customer Samples</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-100 dark:border-slate-800">
+                                        <th class="py-4 px-2">ID</th>
+                                        <th class="py-4 px-2">Spend</th>
+                                        <th class="py-4 px-2">Freq</th>
+                                        <th class="py-4 px-2">Avg Order</th>
+                                        <th class="py-4 px-2">Segment</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customer-samples-body" class="text-sm font-medium text-slate-600 dark:text-slate-300">
+                                    <!-- Samples will be injected here -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>

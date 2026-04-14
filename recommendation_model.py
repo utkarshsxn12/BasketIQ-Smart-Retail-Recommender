@@ -3,6 +3,8 @@ import numpy as np
 from mlxtend.preprocessing import TransactionEncoder
 from mlxtend.frequent_patterns import apriori, fpgrowth, association_rules
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 import os
 import difflib
 
@@ -279,6 +281,71 @@ def get_smart_insights():
     insights.append(f"There's a very strong correlation between {', '.join(list(best_lift['antecedents']))} and {', '.join(list(best_lift['consequents']))}.")
     
     return insights
+
+def get_customer_segments(dataset_path='Groceries_dataset.csv'):
+    if not os.path.exists(dataset_path):
+        return {"error": "Dataset for clustering not found"}
+    
+    try:
+        df = pd.read_csv(dataset_path)
+        
+        # Simulated 'Amount' since it's missing in the original dataset
+        # We'll use a random spend per item for demonstration
+        np.random.seed(42)
+        df['Amount'] = np.random.uniform(5, 50, size=len(df))
+        
+        # Feature Engineering: total_spend, purchase_frequency, average_order_value
+        customer_data = df.groupby('Member_number').agg({
+            'Amount': 'sum',
+            'itemDescription': 'count',
+            'Date': 'nunique'
+        }).rename(columns={
+            'Amount': 'total_spend',
+            'itemDescription': 'total_items',
+            'Date': 'purchase_frequency'
+        })
+        
+        customer_data['average_order_value'] = customer_data['total_spend'] / customer_data['purchase_frequency']
+        
+        # Scaling features
+        features = ['total_spend', 'purchase_frequency', 'average_order_value']
+        scaler = StandardScaler()
+        scaled_features = scaler.fit_transform(customer_data[features])
+        
+        # K-Means Clustering
+        kmeans = KMeans(n_clusters=3, random_state=42, n_init=10)
+        customer_data['cluster'] = kmeans.fit_predict(scaled_features)
+        
+        # Labeling clusters meaningfully
+        # We'll use total_spend to determine labels
+        cluster_means = customer_data.groupby('cluster')['total_spend'].mean().sort_values()
+        label_map = {
+            cluster_means.index[0]: 'Low Value',
+            cluster_means.index[1]: 'Medium Value',
+            cluster_means.index[2]: 'High Value'
+        }
+        customer_data['segment'] = customer_data['cluster'].map(label_map)
+        
+        # Prepare output
+        segments_summary = customer_data.groupby('segment').agg({
+            'total_spend': 'mean',
+            'purchase_frequency': 'mean',
+            'average_order_value': 'mean'
+        }).round(2).to_dict('index')
+        
+        distribution = customer_data['segment'].value_counts().to_dict()
+        
+        # Sample customers for display
+        sample_customers = customer_data.reset_index().head(10).to_dict('records')
+        
+        return {
+            "summary": segments_summary,
+            "distribution": distribution,
+            "samples": sample_customers
+        }
+        
+    except Exception as e:
+        return {"error": str(e)}
 
 def setup_system(dataset_path='simple_groceries.csv'):
     global RULES_DF, ITEM_FREQS

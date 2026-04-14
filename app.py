@@ -78,6 +78,14 @@ def smart_insights():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/customer-segments', methods=['GET'])
+def customer_segments():
+    try:
+        segments = rm.get_customer_segments()
+        return jsonify(segments)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "online", "message": "Backend is running!"})

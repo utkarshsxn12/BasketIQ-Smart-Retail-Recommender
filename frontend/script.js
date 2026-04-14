@@ -13,6 +13,7 @@ const statusPing = document.getElementById('status-ping');
 const insightsSection = document.getElementById('insights-section');
 const darkModeToggle = document.getElementById('dark-mode-toggle');
 let salesChart = null;
+let segmentChart = null;
 
 // 0. Dark Mode Logic
 function initDarkMode() {
@@ -30,9 +31,12 @@ function toggleDarkMode() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('darkMode', isDark);
     
-    // Refresh chart to update colors if it exists
+    // Refresh charts to update colors if they exist
     if (salesChart) {
         getTopProducts();
+    }
+    if (segmentChart) {
+        getCustomerSegments();
     }
 }
 
@@ -53,6 +57,7 @@ async function checkHealth() {
             getModelStats();
             getTopCombinations();
             getSmartInsights();
+            getCustomerSegments();
         }
     } catch (err) {
         statusDot.className = 'relative inline-flex rounded-full h-2 w-2 bg-rose-500';
@@ -146,6 +151,129 @@ async function getSmartInsights() {
     } catch (err) {
         console.error("Error fetching smart insights:", err);
     }
+}
+
+async function getCustomerSegments() {
+    try {
+        const res = await fetch(`${API_BASE}/customer-segments`);
+        const data = await res.json();
+        
+        if (data.error) {
+            console.error("Clustering error:", data.error);
+            return;
+        }
+        
+        renderSegmentChart(data.distribution);
+        renderSegmentCards(data.summary);
+        renderCustomerSamples(data.samples);
+    } catch (err) {
+        console.error("Error fetching customer segments:", err);
+    }
+}
+
+function renderSegmentChart(dist) {
+    const ctx = document.getElementById('segmentChart').getContext('2d');
+    const isDark = document.documentElement.classList.contains('dark');
+    
+    if (segmentChart) {
+        segmentChart.destroy();
+    }
+    
+    const labels = Object.keys(dist);
+    const counts = Object.values(dist);
+    
+    segmentChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: counts,
+                backgroundColor: [
+                    'rgba(99, 102, 241, 0.8)', // High Value
+                    'rgba(168, 85, 247, 0.8)', // Medium Value
+                    'rgba(16, 185, 129, 0.8)'  // Low Value
+                ],
+                borderWidth: 0,
+                hoverOffset: 20
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 20,
+                        font: { family: 'Inter', size: 12, weight: 'bold' },
+                        color: isDark ? '#64748b' : '#94a3b8'
+                    }
+                }
+            },
+            cutout: '70%'
+        }
+    });
+}
+
+function renderSegmentCards(summary) {
+    const container = document.getElementById('segment-cards');
+    container.innerHTML = '';
+    
+    Object.entries(summary).forEach(([segment, metrics], index) => {
+        const card = document.createElement('div');
+        const colors = {
+            'High Value': 'indigo',
+            'Medium Value': 'purple',
+            'Low Value': 'emerald'
+        };
+        const color = colors[segment] || 'slate';
+        
+        card.className = `bg-${color}-50/50 dark:bg-${color}-950/20 p-6 rounded-3xl border border-${color}-100 dark:border-${color}-900/30 space-y-4 fade-in`;
+        card.style.animationDelay = `${index * 100}ms`;
+        
+        card.innerHTML = `
+            <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-${color}-500 flex items-center justify-center text-white text-xs">💎</div>
+                <h5 class="font-black text-${color}-600 dark:text-${color}-400 uppercase tracking-widest text-[10px]">${segment}</h5>
+            </div>
+            <div class="space-y-2">
+                <div>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Avg Spend</p>
+                    <p class="text-xl font-black text-slate-800 dark:text-white">$${metrics.total_spend}</p>
+                </div>
+                <div>
+                    <p class="text-[9px] font-bold text-slate-400 uppercase tracking-tighter">Avg Freq</p>
+                    <p class="text-sm font-bold text-slate-600 dark:text-slate-300">${metrics.purchase_frequency} visits</p>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function renderCustomerSamples(samples) {
+    const tbody = document.getElementById('customer-samples-body');
+    tbody.innerHTML = '';
+    
+    samples.forEach((customer) => {
+        const tr = document.createElement('tr');
+        tr.className = "border-b border-slate-50 dark:border-slate-900/50 hover:bg-slate-50/50 dark:hover:bg-slate-900/30 transition-colors";
+        
+        tr.innerHTML = `
+            <td class="py-4 px-2">#${customer.Member_number}</td>
+            <td class="py-4 px-2 font-black text-slate-800 dark:text-white">$${customer.total_spend.toFixed(2)}</td>
+            <td class="py-4 px-2">${customer.purchase_frequency}</td>
+            <td class="py-4 px-2">$${customer.average_order_value.toFixed(2)}</td>
+            <td class="py-4 px-2">
+                <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
+                    customer.segment === 'High Value' ? 'bg-indigo-100 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400' :
+                    customer.segment === 'Medium Value' ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' :
+                    'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                }">${customer.segment}</span>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
 }
 
 function renderSalesChart(data) {
