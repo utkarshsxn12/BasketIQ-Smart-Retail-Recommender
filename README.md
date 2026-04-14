@@ -1,4 +1,4 @@
-# 🛒 BAsketIQ
+# 🛒 BasketIQ
 
 An intelligent product recommendation system that analyzes customer purchase patterns using **Market Basket Analysis** to suggest relevant products in real-time.
 
